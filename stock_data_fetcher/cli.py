@@ -94,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[UnexpectedOutputError] {e}", file=sys.stderr)
         return 4
 
-    if args.show-summary:
+    if args.show_summary:   
         print("=== Summary ===")
         print(f"Symbols: {', '.join(symbols)}")
         print(f"Date Range: {start} -> {end if end else 'latest'}")
