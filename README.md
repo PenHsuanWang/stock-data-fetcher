@@ -174,6 +174,7 @@ Exit codes indicate error type clearly:
 * **2:** Validation errors (arguments, dates)
 * **3:** Data retrieval errors (rate limits, invalid symbols)
 * **4:** File system/output errors
+* **5:** Licensing violations (data‑usage not permitted for chosen provider/intended‑use)
 
 ---
 
@@ -197,6 +198,8 @@ Internally adds one day to the end-date to include it (compensating for `yfinanc
 | `--start-date`     | Yes      | Inclusive start date (`YYYY-MM-DD`).                   |
 | `--end-date`       | No       | Inclusive end date (`YYYY-MM-DD`), defaults to latest. |
 | `--interval`       | No       | Data frequency (`1d`, `1wk`, etc.).                    |
+| `--provider`        | No       | Data source provider (`yahoo` \| `twse`). Defaults to `yahoo`. |
+| `--intended-use`    | No       | Your planned use of the data (`private_research` \| `redistribute` \| `commercial`). |
 | `--file-format`    | No       | Output format (`csv`; `parquet` planned).              |
 | `--output-path`    | No       | Directory to save CSV files.                           |
 | `--columns`        | No       | Columns to retain (e.g., `Close Volume`).              |
@@ -254,5 +257,19 @@ Licensed under MIT. Note: Yahoo Finance data usage governed by Yahoo’s terms.
 ## Disclaimer
 
 This tool is **not affiliated with or endorsed by Yahoo Finance**. Data provided is informational only; verify with official sources before making investment decisions.
+
+---
+
+## Licensing Compliance
+
+By default the tool downloads from Yahoo Finance (`--provider yahoo`) which allows personal and redistributable use
+under Yahoo’s terms.  
+When `--provider twse` is selected the CLI enforces a **licence check**: only the `private_research`
+intended‑use is permitted out‑of‑the‑box.  Any attempt to download TWSE data for `redistribute` or `commercial`
+purposes will exit with code **5**.  
+If you hold a valid TWSE market‑data agreement you may extend the policy matrix in `licensing.py`
+to whitelist your use‑case.
+
+*This simple guard is **not** a legal opinion—always verify your licences before publication.*
 
 ---

@@ -12,7 +12,8 @@ TWSE_BASE = "https://www.twse.com.tw"
 # Endpoints (CSV/JSON). We request JSON where possible for stability.
 ENDPOINT_T86 = "/rwd/zh/fund/T86"        # Institutional investors by stock
 ENDPOINT_BFI82U = "/rwd/zh/fund/BFI82U"  # Market aggregate
-ENDPOINT_DAYTRADE = "/rwd/zh/trading/exchange/MI_DAY_TRADING"  # Day trading stats
+# Official "Objects for Day Trading" daily report (TWTB4U). JSON is available; CSV (open_data) as fallback.
+ENDPOINT_DAYTRADE = "/exchangeReport/TWTB4U"
 
 DEFAULT_TIMEOUT = 10
 
@@ -68,14 +69,39 @@ def fetch_bfi82u_single(date: dt.date, retry: int = 0, retry_wait: int = 3) -> O
 
 def fetch_daytrade_single(date: dt.date, retry: int = 0, retry_wait: int = 3) -> Optional[pd.DataFrame]:
     """
-    Fetch day trading statistics for a single date.
+    Fetch day trading statistics (TWTB4U) for a single date.
+
+    Strategy:
+      1) Try JSON endpoint:  /exchangeReport/TWTB4U?date=YYYYMMDD&response=json
+      2) If JSON not OK (stat != OK) or 404, fallback to CSV open_data endpoint.
+      3) Return None on weekends/holidays (TWSE returns no data; we quietly skip).
     """
-    params = {"date": date.strftime("%Y%m%d"), "response": "json"}
-    js = _get_json(TWSE_BASE + ENDPOINT_DAYTRADE, params, retry=retry, retry_wait=retry_wait)
-    if not js:
+    # Skip weekends quickly to avoid useless requests
+    if date.weekday() >= 5:
         return None
-    df = pd.DataFrame(js.get("data", []), columns=js.get("fields", []))
-    if df.empty:
+
+    params_json = {"date": date.strftime("%Y%m%d"), "response": "json"}
+    js = _get_json(TWSE_BASE + ENDPOINT_DAYTRADE, params_json, retry=retry, retry_wait=retry_wait)
+
+    df: Optional[pd.DataFrame] = None
+    if js:
+        tmp = pd.DataFrame(js.get("data", []), columns=js.get("fields", []))
+        if not tmp.empty:
+            df = tmp
+
+    # Fallback to CSV if JSON failed or returned empty
+    if df is None or df.empty:
+        csv_url = f"{TWSE_BASE}{ENDPOINT_DAYTRADE}?response=open_data&date={date.strftime('%Y%m%d')}"
+        try:
+            tmp = pd.read_csv(csv_url)
+            if not tmp.empty:
+                df = tmp
+        except Exception as exc:
+            logger.warning("CSV fallback failed for daytrade %s: %s", date, exc)
+            return None
+
+    if df is None or df.empty:
         return None
+
     df["date"] = date
     return df
