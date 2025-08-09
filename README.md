@@ -20,20 +20,22 @@ Dates formatted as `YYYYMMDD`; if `END` is omitted, defaults to `latest`.
 6. [Examples](#examples)
 7. [File Naming](#file-naming)
 8. [Adjusted Prices & Data Repair](#adjusted-prices--data-repair)
-9. [Architecture](#architecture)
-10. [Module Overview](#module-overview)
-11. [Data Flow](#data-flow)
-12. [Error Handling](#error-handling)
-13. [Column Filtering](#column-filtering)
-14. [Inclusive Date Handling](#inclusive-date-handling)
-15. [CLI Argument Reference](#cli-argument-reference)
-16. [Testing](#testing)
-17. [Packaging (PEP 621)](#packaging-pep-621)
-18. [Performance](#performance)
-19. [Roadmap](#roadmap)
-20. [Contributing](#contributing)
-21. [License](#license)
-22. [Disclaimer](#disclaimer)
+9. [TWSE Data Integration](#twse-data-integration)
+10. [Architecture](#architecture)
+11. [Module Overview](#module-overview)
+12. [Data Flow](#data-flow)
+13. [Error Handling](#error-handling)
+14. [Column Filtering](#column-filtering)
+15. [Inclusive Date Handling](#inclusive-date-handling)
+16. [CLI Argument Reference](#cli-argument-reference)
+17. [Testing](#testing)
+18. [Packaging (PEP 621)](#packaging-pep-621)
+19. [Performance](#performance)
+20. [Roadmap](#roadmap)
+21. [Contributing](#contributing)
+22. [License](#license)
+23. [Disclaimer](#disclaimer)
+24. [Licensing Compliance](#licensing-compliance)
 
 ---
 
@@ -47,6 +49,7 @@ Dates formatted as `YYYYMMDD`; if `END` is omitted, defaults to `latest`.
 * **Adjusted Prices**: Default OHLC adjustment for dividends and splits (`auto_adjust`).
 * **Data Repair Option**: Fixes known data anomalies (`--repair`).
 * **Structured Errors & Exit Codes**: Robust error handling for automation workflows.
+* **TWSE Institutional & Day-Trading Data**: Optional download of Taiwan Stock Exchange institutional (T86) flows and day-trade stats, with merge support (`--twse-t86`, `--twse-daytrade`, `--merge-twse`).
 * **Modern Python Packaging**: Follows PEP 621 (`pyproject.toml`) standards.
 
 ---
@@ -117,6 +120,13 @@ stock-data-fetcher -s AAPL --start-date 2025-01-01 --no-auto-adjust --repair
 stock-data-fetcher -s AAPL MSFT --start-date 2025-04-01 --output-path data_out
 ```
 
+**Fetch and merge TWSE institutional and day-trading data:**
+
+```bash
+stock-data-fetcher --symbols 2330 --start-date 2024-12-01 --end-date 2024-12-05 \
+  --provider twse --twse-t86 --twse-daytrade --merge-twse
+```
+
 ---
 
 ## File Naming
@@ -136,6 +146,26 @@ If `END` is omitted, `latest` is used.
 * Default behavior (`auto_adjust=True`) adjusts OHLC prices.
 * `--no-auto-adjust` retrieves raw exchange data.
 * `--repair` corrects known currency/unit anomalies.
+
+---
+
+## TWSE Data Integration
+
+The CLI can pull **supplementary data** from the Taiwan Stock Exchange:
+
+* **Institutional investors (T86)** — per‑stock buy/sell volumes for foreign investors, dealers, and investment trusts.
+* **Market aggregate funds (BFI82U)** — overall institutional fund flows.
+* **Day trading stats (TWTB4U)** — daily day‑trading volume and ratios.
+
+Enable these via:
+
+```bash
+--twse-t86        # T86 institutional flows
+--twse-daytrade   # Day-trading statistics
+--merge-twse      # Merge TWSE data with price files
+```
+
+When using TWSE data, set `--provider twse` and ensure `--intended-use private_research` to satisfy licence checks.
 
 ---
 
@@ -207,6 +237,9 @@ Internally adds one day to the end-date to include it (compensating for `yfinanc
 | `--repair`         | No       | Fix data anomalies.                                    |
 | `--show-summary`   | No       | Show download summary after completion.                |
 | `--progress`       | No       | Display progress bar during download.                  |
+| `--twse-t86`       | No       | Fetch TWSE institutional investor (T86) data.          |
+| `--twse-daytrade`  | No       | Fetch TWSE day-trading statistics (TWTB4U).            |
+| `--merge-twse`     | No       | Merge TWSE data with price files per symbol.          |
 
 ---
 
